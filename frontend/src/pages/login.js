@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Box, Typography, Paper, IconButton, InputAdornment, Divider, Checkbox, FormControlLabel } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { login } from '../services/api';
+import { 
+  Container, TextField, Button, Box, Typography, Paper, IconButton, 
+  InputAdornment, Divider, Checkbox, FormControlLabel, Alert 
+} from '@mui/material';
 import GoogleIcon from '@mui/icons-material/Google';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import Visibility from '@mui/icons-material/Visibility';
@@ -9,12 +14,26 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Illustration from '../assets/loginilus.svg';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' }); // ✅ Supports email or phone
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login Data:', formData);
+    setError(null);
+
+    try {
+      const response = await login(formData);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      // ✅ Prevent navigation error if dashboard doesn't exist
+      console.log("Login successful. Redirecting...");
+      navigate('/dashboard'); 
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid email/phone or password');
+    }
   };
 
   return (
@@ -24,25 +43,27 @@ const Login = () => {
         {/* Left Section - Login Form */}
         <Box sx={{ flex: 1, padding: 5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>Kanban Task Manager</Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ marginBottom: 2 }}>Welcome back! Select method to log in:</Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ marginBottom: 2 }}>Login with Email or Phone Number:</Typography>
 
-          {/* Social Logins */}
+          {/* ✅ Social Logins Restored */}
           <Box display="flex" gap={2} mb={2}>
             <Button variant="outlined" startIcon={<GoogleIcon />} fullWidth>Google</Button>
             <Button variant="outlined" startIcon={<FacebookIcon />} fullWidth>Facebook</Button>
           </Box>
 
-          <Divider sx={{ my: 2 }}>or continue with email</Divider>
+          <Divider sx={{ my: 2 }}>or continue with email/phone</Divider>
+
+          {/* Show error message if login fails */}
+          {error && <Alert severity="error">{error}</Alert>}
 
           {/* Login Form */}
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              label="Email"
-              type="email"
+              label="Email or Phone Number"
               variant="outlined"
               fullWidth
               required
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
             />
             <TextField
               label="Password"
@@ -66,20 +87,14 @@ const Login = () => {
               <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>Forgot Password?</Typography>
             </Box>
             <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>Log in</Button>
-            <Typography variant="body2" align="center" sx={{ mt: 2 }}>Don't have an account? <span style={{ color: '#1976d2', cursor: 'pointer' }}>Create an account</span></Typography>
+            <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+              Don't have an account? <span style={{ color: '#1976d2', cursor: 'pointer' }} onClick={() => navigate('/register')}>Create an account</span>
+            </Typography>
           </Box>
         </Box>
 
-        {/* Right Section - Illustration with SVG */}
-        <Box sx={{ 
-          flex: 1, 
-          background: '#0A66C2', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          color: 'white', 
-          padding: 4 
-        }}>
+        {/* Right Section - Illustration */}
+        <Box sx={{ flex: 1, background: '#0A66C2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', padding: 4 }}>
           <img src={Illustration} alt="Illustration" style={{ width: '80%', height: 'auto', filter: 'brightness(1.2)' }} />
         </Box>
         

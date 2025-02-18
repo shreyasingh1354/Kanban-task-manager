@@ -38,21 +38,15 @@ const Login = () => {
 
   return (
     <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Paper elevation={6} sx={{ display: 'flex', width: '100%', maxWidth: 900, borderRadius: 3, overflow: 'hidden' }}>
+      <Paper elevation={6} sx={{ display: 'flex', width: '100%', maxWidth: 900, borderRadius: 5, overflow: 'hidden' }}>
         
         {/* Left Section - Login Form */}
-        <Box sx={{ flex: 1, padding: 5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>Kanban Task Manager</Typography>
+        <Box sx={{ flex: 1, padding: 10, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>Task Manager</Typography>
           <Typography variant="body2" color="textSecondary" sx={{ marginBottom: 2 }}>Login with Email or Phone Number:</Typography>
 
           {/* ✅ Social Logins Restored */}
-          <Box display="flex" gap={2} mb={2}>
-            <Button variant="outlined" startIcon={<GoogleIcon />} fullWidth>Google</Button>
-            <Button variant="outlined" startIcon={<FacebookIcon />} fullWidth>Facebook</Button>
-          </Box>
-
-          <Divider sx={{ my: 2 }}>or continue with email/phone</Divider>
-
+         
           {/* Show error message if login fails */}
           {error && <Alert severity="error">{error}</Alert>}
 
@@ -86,7 +80,7 @@ const Login = () => {
               <FormControlLabel control={<Checkbox />} label="Remember me" />
               <Typography variant="body2" color="primary" sx={{ cursor: 'pointer' }}>Forgot Password?</Typography>
             </Box>
-            <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2 }}>Log in</Button>
+            <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 2, borderRadius: 3}}>Log in</Button>
             <Typography variant="body2" align="center" sx={{ mt: 2 }}>
               Don't have an account? <span style={{ color: '#1976d2', cursor: 'pointer' }} onClick={() => navigate('/register')}>Create an account</span>
             </Typography>
@@ -94,7 +88,7 @@ const Login = () => {
         </Box>
 
         {/* Right Section - Illustration */}
-        <Box sx={{ flex: 1, background: '#0A66C2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', padding: 4 }}>
+        <Box sx={{ flex: 1, background: '#885fb6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', padding: 4 }}>
           <img src={Illustration} alt="Illustration" style={{ width: '80%', height: 'auto', filter: 'brightness(1.2)' }} />
         </Box>
         

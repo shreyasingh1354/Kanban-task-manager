@@ -22,17 +22,15 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-
+  
     try {
       const response = await login(formData);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
-      // ✅ Prevent navigation error if dashboard doesn't exist
-      console.log("Login successful. Redirecting...");
-      navigate('/dashboard'); 
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+  
+      navigate("/dashboard"); // ✅ Redirects after login
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email/phone or password');
+      setError(err.response?.data?.message || "Invalid email/phone or password");
     }
   };
 

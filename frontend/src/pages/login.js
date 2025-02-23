@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../services/api';
 import { 
   Container, TextField, Button, Box, Typography, Paper, IconButton, 
-  InputAdornment, Divider, Checkbox, FormControlLabel, Alert 
+  InputAdornment,Checkbox, FormControlLabel, Alert 
 } from '@mui/material';
-import GoogleIcon from '@mui/icons-material/Google';
-import FacebookIcon from '@mui/icons-material/Facebook';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 

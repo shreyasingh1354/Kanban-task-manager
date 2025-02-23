@@ -66,7 +66,10 @@ const Header = () => {
       <Toolbar sx={{ height: 64 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
           <Typography variant="h6" component="h1" sx={{ fontWeight: 600 }}>
-            Craftboard Project
+                         
+          </Typography>
+          <Typography variant="h6" component="h1" sx={{ fontWeight: 600 }}>
+                         
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AvatarGroup max={2} sx={{ '& .MuiAvatar-root': { width: 32, height: 32 } }}>

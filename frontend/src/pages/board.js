@@ -12,13 +12,23 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import Sidebar from '../components/sidebar';
 import Header from '../components/header';
+import TaskCard from '../components/taskCard';
 
 const Board = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const handleSidebarToggle = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleOpenTask = (task) => {
+    setSelectedTask(task);
+  };
+
+  const handleCloseTask = () => {
+    setSelectedTask(null);
   };
 
   const columns = [
@@ -135,12 +145,14 @@ const Board = () => {
                 {column.items.map((item, itemIndex) => (
                   <Paper
                     key={itemIndex}
+                    onClick={() => handleOpenTask(item)}
                     sx={{
                       p: 2,
                       borderRadius: 1,
                       boxShadow: 1,
-                      '&:hover': { boxShadow: 2 },
-                      transition: 'box-shadow 0.2s',
+                      cursor: 'pointer',
+                      '&:hover': { boxShadow: 2, backgroundColor: '#f5f5f5' },
+                      transition: 'box-shadow 0.2s, background-color 0.2s',
                     }}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -177,6 +189,9 @@ const Board = () => {
           ))}
         </Box>
       </Box>
+      {selectedTask && (
+  <TaskCard open={Boolean(selectedTask)} task={selectedTask} onClose={handleCloseTask} />
+)}
     </Box>
   );
 };

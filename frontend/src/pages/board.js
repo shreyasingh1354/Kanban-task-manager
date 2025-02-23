@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -13,6 +14,13 @@ import Sidebar from '../components/sidebar';
 import Header from '../components/header';
 
 const Board = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   const columns = [
     {
       title: 'To-do',
@@ -92,11 +100,19 @@ const Board = () => {
 
   return (
     <Box sx={{ display: 'left', height: '100vh', overflow: 'hidden' }}>
-      {/* Sidebar */}
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onToggle={handleSidebarToggle} />
 
-      {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, p: 0, ml: '240px', width: 'calc(100% - 240px)', overflowY: 'auto' }}>
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          p: 0, 
+          ml: sidebarOpen ? '260px' : 0,
+          width: sidebarOpen ? 'calc(100% - 260px)' : '100%',
+          transition: 'margin-left 0.3s, width 0.3s',
+          overflowY: 'auto' 
+        }}
+      >
         <Header title="Board" />
         
         <Box sx={{ display: 'flex', gap: 2, p: 2 }}>

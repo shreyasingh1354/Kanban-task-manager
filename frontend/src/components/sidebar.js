@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Drawer,
@@ -25,6 +26,16 @@ import {
 const drawerWidth = 260;
 
 const Sidebar = ({ onViewChange, currentView }) => {
+  const navigate = useNavigate();
+  const currentPath = currentView || '';  // Provide default value
+
+  const handleNavigation = (path) => {
+    if (onViewChange) {
+      onViewChange(path);
+    }
+    navigate(`/${path}`);
+  };
+
   const teams = [
     { id: 1, name: 'Design Team' },
     { id: 2, name: 'Development Team' },
@@ -59,34 +70,6 @@ const Sidebar = ({ onViewChange, currentView }) => {
         </Box>
       </Box>
 
-      {/* Main Menu */}
-      <Box sx={{ p: 2 }}>
-        <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
-          MAIN MENU
-        </Typography>
-        <List sx={{ mt: 1 }}>
-          {[
-            { icon: <Search />, text: 'Search' },
-            { icon: <Notifications />, text: 'Notifications' },
-            { icon: <CalendarMonth />, text: 'Calendar' },
-            { icon: <Settings />, text: 'Settings' },
-          ].map((item, index) => (
-            <ListItem
-              key={index}
-              button
-              sx={{
-                borderRadius: 1,
-                mb: 0.5,
-                '&:hover': { bgcolor: 'action.hover' }
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} primaryTypographyProps={{ variant: 'body2' }} />
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-
       <Divider />
 
       {/* My Work */}
@@ -97,8 +80,8 @@ const Sidebar = ({ onViewChange, currentView }) => {
         <List sx={{ mt: 1 }}>
           <ListItem
             button
-            selected={currentView === 'dashboard'}
-            onClick={() => onViewChange('dashboard')}
+            selected={currentPath === 'dashboard'}
+            onClick={() => handleNavigation('dashboard')}
             sx={{
               borderRadius: 1,
               mb: 0.5,
@@ -116,8 +99,8 @@ const Sidebar = ({ onViewChange, currentView }) => {
           </ListItem>
           <ListItem
             button
-            selected={currentView === 'board'}
-            onClick={() => onViewChange('board')}
+            selected={currentPath === 'board'}
+            onClick={() => handleNavigation('board')}
             sx={{
               borderRadius: 1,
               mb: 0.5,
@@ -169,6 +152,26 @@ const Sidebar = ({ onViewChange, currentView }) => {
               <ListItemText primary={team.name} primaryTypographyProps={{ variant: 'body2' }} />
             </ListItem>
           ))}
+        </List>
+      </Box>
+
+      {/* Calendar */}
+      <Divider />
+      <Box sx={{ p: 2, mb: 2 }}>
+        <List sx={{ mt: 1 }}>
+          <ListItem
+            button
+            sx={{
+              borderRadius: 1,
+              mb: 0.5,
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <CalendarMonth />
+            </ListItemIcon>
+            <ListItemText primary="Calendar" primaryTypographyProps={{ variant: 'body2' }} />
+          </ListItem>
         </List>
       </Box>
     </Drawer>

@@ -31,6 +31,7 @@ const Register = () => {
     try {
       const response = await register(formData);
       alert('Registration successful! Please login.');
+      console.log("Registration Response:", response);
       navigate('/'); // Redirect to login page
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -112,7 +113,7 @@ const Register = () => {
         {/* Right Section - Illustration */}
         <Box sx={{ 
           flex: 1, 
-          background: '#0A66C2', 
+          
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center', 

@@ -13,10 +13,7 @@ import {
   Divider,
 } from '@mui/material';
 import {
-  Search,
-  Notifications,
   CalendarMonth,
-  Settings,
   Add,
   Dashboard,
   Group,

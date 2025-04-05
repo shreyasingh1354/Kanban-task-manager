@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../config/db');
 const authenticate = require('../middleware/auth');
+const { createDefaultLists } = require('./boardRoutes');
 
 const router = express.Router();
 
@@ -36,12 +37,25 @@ router.post('/create', authenticate, async (req, res) => {
         [team.id, userId, 'admin']
       );
       
+      // Create default board
+      const boardResult = await client.query(
+        'INSERT INTO BOARD (title, team_id) VALUES ($1, $2) RETURNING id',
+        ['Main Board', team.id]
+      );
+      
+      
+      const boardId = boardResult.rows[0].id;
+      
+      // Create default lists
+      await createDefaultLists(boardId, client);
+      
       await client.query('COMMIT');
       
       res.status(201).json({ 
-        message: 'Team created successfully', 
+        message: 'Team created successfully with default board and lists', 
         team: team,
-        isAdmin: true
+        isAdmin: true,
+        boardId: boardId
       });
       
     } catch (err) {
@@ -157,11 +171,11 @@ router.get('/:teamId/members', authenticate, async (req, res) => {
     
     // Get all team members with their user info
     const members = await pool.query(
-      `SELECT u.id, u.username, u.email, tm.role, tm.joined_at
+      `SELECT u.id, u.username, u.email, tm.role
        FROM TEAM_MEMBERS tm
        JOIN users u ON tm.user_id = u.id
        WHERE tm.team_id = $1
-       ORDER BY tm.role = 'admin' DESC, tm.joined_at ASC`,
+       ORDER BY tm.role = 'admin' DESC`,
       [teamId]
     );
     

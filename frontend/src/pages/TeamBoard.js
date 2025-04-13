@@ -21,10 +21,13 @@ import {
   Group as GroupIcon,
   ArrowBack,
   Add as AddIcon,
-  PersonAdd as PersonAddIcon
+  PersonAdd as PersonAddIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
-import { getTeamMembers } from '../services/teamService';
-import Board from './board'; // Assuming you have a Board component
+import { getTeamMembers, removeTeamMember } from '../services/teamService';
+import { getTeamBoards } from '../services/boardService';
+import Board from './board';
+import AddMemberModal from '../components/AddMemberModal';
 
 const TeamBoard = () => {
   const { teamId } = useParams();
@@ -32,18 +35,40 @@ const TeamBoard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [boards, setBoards] = useState([]);
+  const [currentBoard, setCurrentBoard] = useState(null);
   const [showMembers, setShowMembers] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  // Fetch team data and boards
   useEffect(() => {
     const fetchTeamData = async () => {
       setLoading(true);
       try {
+        // Fetch team members
         const members = await getTeamMembers(teamId);
         setTeamMembers(members);
+        
+        // Check if current user is admin
+        const currentUserData = JSON.parse(localStorage.getItem('userData'));
+        const currentUser = members.find(member => member.id === currentUserData?.id);
+        setIsAdmin(currentUser?.role === 'admin');
+        
+        // Fetch boards for this team
+        const boardsData = await getTeamBoards(teamId);
+        setBoards(boardsData);
+        
+        // Set current board to the first one if available
+        if (boardsData && boardsData.length > 0) {
+          setCurrentBoard(boardsData[0]);
+        }
+        
         setError(null);
       } catch (err) {
         console.error("Error fetching team data:", err);
-        setError(err.message || "Failed to load team data");
+        setError(err.response?.data?.message || "Failed to load team data");
       } finally {
         setLoading(false);
       }
@@ -56,6 +81,27 @@ const TeamBoard = () => {
 
   const handleBackToDashboard = () => {
     navigate('/dashboard');
+  };
+  
+  const handleMemberAdded = async () => {
+    try {
+      const members = await getTeamMembers(teamId);
+      setTeamMembers(members);
+    } catch (err) {
+      console.error("Error refreshing team members:", err);
+    }
+  };
+  
+  const handleRemoveMember = async (userId) => {
+    try {
+      await removeTeamMember(teamId, userId);
+      // Refresh member list
+      handleMemberAdded();
+      setRemoveConfirm(null);
+    } catch (err) {
+      console.error("Error removing team member:", err);
+      setError(err.response?.data?.message || "Failed to remove team member");
+    }
   };
 
   if (loading) {
@@ -85,11 +131,10 @@ const TeamBoard = () => {
     );
   }
 
-  // Get team name from first member
-  // Note: This assumes the backend is returning team name in the members query
-  // If not, you'll need to make a separate API call to get team details
-  const teamName = teamMembers.length > 0 && teamMembers[0].team_name ? 
-    teamMembers[0].team_name : 
+  // Get team name from first member or from boards
+  const teamName = 
+    (teamMembers.length > 0 && teamMembers[0].team_name) ||
+    (boards.length > 0 && boards[0].team_name) ||
     "Team Board";
 
   return (
@@ -125,14 +170,31 @@ const TeamBoard = () => {
             >
               Team Members ({teamMembers.length})
             </Button>
+            
+            {isAdmin && (
+              <Button 
+                variant="contained" 
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={() => setShowAddMember(true)}
+              >
+                Add Member
+              </Button>
+            )}
           </Box>
         </Box>
         
         <Divider sx={{ mb: 4 }} />
         
         {/* Board Component */}
-        <Board teamId={teamId} />
-
+        {currentBoard ? (
+          <Board boardId={currentBoard.id} teamId={teamId} />
+        ) : (
+          <Alert severity="info">
+            No boards found for this team. Create a board to get started.
+          </Alert>
+        )}
+        
         {/* Team Members Dialog */}
         <Dialog 
           open={showMembers} 
@@ -166,17 +228,71 @@ const TeamBoard = () => {
                       {member.email}
                     </Typography>
                   </Box>
-                  <Chip 
-                    label={member.role === 'admin' ? 'Admin' : 'Member'} 
-                    color={member.role === 'admin' ? 'primary' : 'default'}
-                    size="small"
-                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Chip 
+                      label={member.role === 'admin' ? 'Admin' : 'Member'} 
+                      color={member.role === 'admin' ? 'primary' : 'default'}
+                      size="small"
+                    />
+                    
+                    {isAdmin && member.id !== JSON.parse(localStorage.getItem('userData'))?.id && (
+                      <Button 
+                        size="small" 
+                        color="error" 
+                        startIcon={<DeleteIcon />}
+                        onClick={() => setRemoveConfirm(member)}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </Box>
                 </Paper>
               ))}
             </Box>
           </DialogContent>
           <DialogActions>
+            {isAdmin && (
+              <Button 
+                color="primary" 
+                onClick={() => {
+                  setShowMembers(false);
+                  setShowAddMember(true);
+                }}
+              >
+                Add Member
+              </Button>
+            )}
             <Button onClick={() => setShowMembers(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+        
+        {/* Add Member Modal */}
+        <AddMemberModal 
+          open={showAddMember}
+          onClose={() => setShowAddMember(false)}
+          teamId={teamId}
+          onMemberAdded={handleMemberAdded}
+        />
+        
+        {/* Confirm Delete Dialog */}
+        <Dialog
+          open={Boolean(removeConfirm)}
+          onClose={() => setRemoveConfirm(null)}
+        >
+          <DialogTitle>Confirm Removal</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to remove {removeConfirm?.username} from the team?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRemoveConfirm(null)}>Cancel</Button>
+            <Button 
+              color="error" 
+              onClick={() => handleRemoveMember(removeConfirm?.id)}
+            >
+              Remove
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>

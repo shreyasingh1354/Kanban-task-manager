@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Box,
@@ -8,7 +8,9 @@ import {
   InputBase,
   Button,
   ToggleButtonGroup,
-  ToggleButton
+  ToggleButton,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -24,11 +26,13 @@ import Sidebar from '../components/sidebar';
 import TaskCard from '../components/taskCard';
 import Ticket from '../components/ticket';
 import AddTicketModal from '../components/addticketmodal';
+// import AddListModal from '../components/AddListModal';
+import { getBoardLists, getListTasks, updateTask } from '../services/boardService';
 
 /* ------------------------------------
-   BOARD NAVIGATION COMPONENT (UNCHANGED)
+   BOARD NAVIGATION COMPONENT
    ------------------------------------ */
-const BoardNavigation = ({ view, onViewChange, onAddTicketClick }) => (
+const BoardNavigation = ({ view, onViewChange, onAddTicketClick, onAddListClick }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderBottom: 1, borderColor: 'divider' }}>
     <Typography variant="h6" sx={{ fontWeight: 600 }}> </Typography>
     <Typography variant="h6" sx={{ fontWeight: 600 }}> </Typography>
@@ -73,21 +77,29 @@ const BoardNavigation = ({ view, onViewChange, onAddTicketClick }) => (
         Customize
       </Button>
 
-      {/* The "Add" button that opens the modal */}
+      {/* <Button
+        variant="outlined"
+        startIcon={<AddIcon />}
+        sx={{ borderRadius: '8px' }}
+        onClick={onAddListClick}
+      >
+        Add List
+      </Button> */}
+
       <Button
         variant="contained"
         startIcon={<AddIcon />}
         sx={{ borderRadius: '8px', ml: 'auto' }}
         onClick={onAddTicketClick}
       >
-        Add
+        Add Task
       </Button>
     </Box>
   </Box>
 );
 
 /* ------------------------------------
-   COLUMN HEADER COMPONENT (UNCHANGED)
+   COLUMN HEADER COMPONENT
    ------------------------------------ */
 const ColumnHeader = ({ title, count, onAdd }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, py: 1 }}>
@@ -116,84 +128,52 @@ const ColumnHeader = ({ title, count, onAdd }) => (
 /* ------------------------------------
    BOARD COMPONENT
    ------------------------------------ */
-const Board = () => {
+const Board = ({ boardId, teamId }) => {
   const [view, setView] = useState('board');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lists, setLists] = useState([]);
+  const [tasks, setTasks] = useState({});
   const [selectedTask, setSelectedTask] = useState(null);
-  const location = useLocation();
-
-  // Moved columns into a state so we can modify them
-  const [columns, setColumns] = useState([
-    {
-      title: 'To-Do',
-      count: 4,
-      items: [
-        {
-          id: 2,
-          title: 'Solar web app design for big change implementation',
-          type: 'Design',
-          priority: 'High',
-          dateRange: 'Dec 2, 24',
-          assignees: ['JD', 'AM'],
-          subtasks: 15,
-          comments: 7,
-          status: 'To-Do',
-          workflow: 'Standard',
-          taskType: 'Feature',
-          estimate: 'Unestimated',
-          team: 'Team 2'
-        },
-      ],
-    },
-    {
-      title: 'In Progress',
-      count: 3,
-      items: [
-        {
-          id: 1,
-          title: 'Mobile app design implementation',
-          type: 'Design',
-          priority: 'High',
-          dateRange: 'Apr 1, 24 - Dec 2, 24',
-          assignees: ['JD', 'AM', 'SK'],
-          subtasks: 9,
-          comments: 3,
-          status: 'In Progress',
-          workflow: 'Standard',
-          taskType: 'Feature',
-          estimate: 'Unestimated',
-          team: 'Team 1'
-        },
-      ],
-    },
-    {
-      title: 'Complete',
-      count: 3,
-      items: [
-        {
-          id: 3,
-          title: 'Mobile app design prototype',
-          type: 'Design',
-          priority: 'High',
-          dateRange: 'Dec 2, 24',
-          assignees: ['JD', 'SK'],
-          subtasks: 2,
-          comments: 2,
-          status: 'Complete',
-          workflow: 'Standard',
-          taskType: 'Feature',
-          estimate: 'Unestimated',
-          team: 'Team 1'
-        },
-      ],
-    },
-  ]);
-
-  // State for the AddTicketModal
   const [addTicketOpen, setAddTicketOpen] = useState(false);
-
-  // Dragging info
+  const [addListOpen, setAddListOpen] = useState(false);
+  const [currentListId, setCurrentListId] = useState(null);
+  const location = useLocation();
+  
+  // Dragging state
   const [dragging, setDragging] = useState(null);
+
+  // Fetch board data
+  useEffect(() => {
+    const fetchBoardData = async () => {
+      if (!boardId) return;
+      
+      setLoading(true);
+      try {
+        // Get lists for this board
+        const listsData = await getBoardLists(boardId);
+        setLists(listsData);
+        
+        // Fetch tasks for each list
+        const tasksObj = {};
+        for (const list of listsData) {
+          const listTasks = await getListTasks(list.id);
+          tasksObj[list.id] = listTasks;
+        }
+        setTasks(tasksObj);
+        
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching board data:", err);
+        setError(err.response?.data?.message || "Failed to load board data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBoardData();
+  }, [boardId]);
 
   // Toggle sidebar
   const handleSidebarToggle = () => {
@@ -213,72 +193,113 @@ const Board = () => {
   };
 
   // Close TaskCard
-  const handleCloseTask = () => {
+  const handleCloseTask = async (updatedTask) => {
+    if (updatedTask) {
+      // Update tasks state with the updated task
+      setTasks(prevTasks => {
+        const listId = updatedTask.list_id;
+        return {
+          ...prevTasks,
+          [listId]: prevTasks[listId].map(task => 
+            task.id === updatedTask.id ? updatedTask : task
+          )
+        };
+      });
+    }
     setSelectedTask(null);
   };
 
   /* ------------------------------------
      DRAG & DROP
      ------------------------------------ */
-  const handleDragStart = (e, ticket, sourceColIndex) => {
-    setDragging({ ticket, sourceColIndex });
+  const handleDragStart = (e, task, sourceListId) => {
+    setDragging({ task, sourceListId });
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
   };
 
-  const handleDrop = (e, targetColIndex) => {
+  const handleDrop = async (e, targetListId) => {
     e.preventDefault();
     if (!dragging) return;
 
-    const { ticket, sourceColIndex } = dragging;
-    // If same column, do nothing
-    if (sourceColIndex === targetColIndex) {
+    const { task, sourceListId } = dragging;
+    // If same list, do nothing
+    if (sourceListId === targetListId) {
       setDragging(null);
       return;
     }
 
-    // Make a copy
-    const newColumns = [...columns];
+    try {
+      // Update the task on the backend
+      const updatedTask = await updateTask(task.id, {
+        ...task,
+        list_id: targetListId
+      });
 
-    // Remove from the source column
-    newColumns[sourceColIndex].items = newColumns[sourceColIndex].items.filter(
-      (it) => it.id !== ticket.id
-    );
+      // Update local state
+      setTasks(prevTasks => {
+        return {
+          ...prevTasks,
+          // Remove from source list
+          [sourceListId]: prevTasks[sourceListId].filter(t => t.id !== task.id),
+          // Add to target list
+          [targetListId]: [...prevTasks[targetListId], updatedTask]
+        };
+      });
+    } catch (err) {
+      console.error("Error moving task:", err);
+      setError("Failed to move task. Please try again.");
+    }
 
-    // Add to the target column
-    newColumns[targetColIndex].items = [
-      ...newColumns[targetColIndex].items,
-      { ...ticket, status: newColumns[targetColIndex].title },
-    ];
-
-    // Update counts
-    newColumns[sourceColIndex].count = newColumns[sourceColIndex].items.length;
-    newColumns[targetColIndex].count = newColumns[targetColIndex].items.length;
-
-    setColumns(newColumns);
     setDragging(null);
   };
 
   /* ------------------------------------
-     ADD TICKET
+     ADD TASK
      ------------------------------------ */
-  const handleAddTicket = (ticketData) => {
-    setColumns((prevCols) => {
-      // find "To-Do" column and add
-      return prevCols.map((col) => {
-        if (col.title === 'To-Do') {
-          return {
-            ...col,
-            items: [...col.items, ticketData],
-            count: col.count + 1,
-          };
-        }
-        return col;
-      });
-    });
+  const handleAddTask = (task) => {
+    if (task && task.list_id) {
+      // Update tasks in the specific list
+      setTasks(prevTasks => ({
+        ...prevTasks,
+        [task.list_id]: [...(prevTasks[task.list_id] || []), task]
+      }));
+    }
+    setAddTicketOpen(false);
   };
+
+  /* ------------------------------------
+     ADD LIST
+     ------------------------------------ */
+  const handleAddList = (list) => {
+    // Add list to state
+    setLists(prevLists => [...prevLists, list]);
+    // Initialize empty tasks array for this list
+    setTasks(prevTasks => ({
+      ...prevTasks,
+      [list.id]: []
+    }));
+    setAddListOpen(false);
+  };
+
+  /* ------------------------------------
+     OPEN ADD TASK MODAL FOR SPECIFIC LIST
+     ------------------------------------ */
+  const handleAddTaskToList = (listId) => {
+    setCurrentListId(listId);
+    setAddTicketOpen(true);
+  };
+
+  /* Display loading spinner when fetching data */
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ display: 'left', height: '100vh', bgcolor: '#f8f9fa' }}>
@@ -296,39 +317,53 @@ const Board = () => {
           height: '100vh',
         }}
       >
+        {error && (
+          <Alert severity="error" sx={{ m: 2 }}>
+            {error}
+          </Alert>
+        )}
+        
         <BoardNavigation
           view={view}
           onViewChange={handleViewChange}
-          onAddTicketClick={() => setAddTicketOpen(true)}
+          onAddTicketClick={() => {
+            setCurrentListId(null);
+            setAddTicketOpen(true);
+          }}
+          onAddListClick={() => setAddListOpen(true)}
         />
         
         <Box sx={{ display: 'flex', gap: 3, p: 3, overflowX: 'auto' }}>
-          {columns.map((column, colIndex) => (
-            <Box
-              key={colIndex}
-              sx={{ width: 320, minWidth: 320, p: 2, borderRadius: 2 }}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, colIndex)}
-            >
-              <ColumnHeader 
-                title={column.title} 
-                count={column.count} 
-                onAdd={() => console.log(`Add to ${column.title}`)}
-              />
-              {column.items.map((item) => (
-                <Box
-                  key={item.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, item, colIndex)}
-                >
-                  <Ticket 
-                    ticket={item} 
-                    onClick={() => handleTaskClick(item)}
-                  />
-                </Box>
-              ))}
-            </Box>
-          ))}
+          {lists.map((list) => {
+            const listTasks = tasks[list.id] || [];
+            return (
+              <Box
+                key={list.id}
+                sx={{ width: 320, minWidth: 320, p: 2, borderRadius: 2 }}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, list.id)}
+              >
+                <ColumnHeader 
+                  title={list.title} 
+                  count={listTasks.length} 
+                  onAdd={() => handleAddTaskToList(list.id)}
+                />
+                {listTasks.map((task) => (
+                  <Box
+                    key={task.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task, list.id)}
+                    sx={{ mb: 2 }}
+                  >
+                    <Ticket 
+                      ticket={task} 
+                      onClick={() => handleTaskClick(task)}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            );
+          })}
         </Box>
       </Box>
 
@@ -339,12 +374,23 @@ const Board = () => {
         onClose={handleCloseTask} 
       />
 
-      {/* The modal we imported from its own file */}
+      {/* The modal for adding a new task */}
       <AddTicketModal
         open={addTicketOpen}
         onClose={() => setAddTicketOpen(false)}
-        onAddTicket={handleAddTicket}
+        onAddTicket={handleAddTask}
+        defaultListId={currentListId}
+        boardId={boardId}
+        lists={lists}
       />
+
+      {/* The modal for adding a new list */}
+      {/* <AddListModal
+        open={addListOpen}
+        onClose={() => setAddListOpen(false)}
+        onAddList={handleAddList}
+        boardId={boardId}
+      /> */}
     </Box>
   );
 };

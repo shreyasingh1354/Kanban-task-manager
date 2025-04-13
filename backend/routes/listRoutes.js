@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/create', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { title, boardId, position } = req.body;
+    const { title, boardId } = req.body;
     
     if (!title || !boardId) {
       return res.status(400).json({ message: 'List title and board ID are required' });
@@ -27,20 +27,10 @@ router.post('/create', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Board not found or access denied' });
     }
     
-    // Get max position if not provided
-    let listPosition = position;
-    if (listPosition === undefined) {
-      const posResult = await pool.query(
-        'SELECT COALESCE(MAX(position) + 1, 0) as new_pos FROM LIST WHERE board_id = $1',
-        [boardId]
-      );
-      listPosition = posResult.rows[0].new_pos;
-    }
-    
     // Create list
     const listResult = await pool.query(
-      'INSERT INTO LIST (title, board_id, position) VALUES ($1, $2, $3) RETURNING id, title, board_id, position',
-      [title, boardId, listPosition]
+      'INSERT INTO LIST (title, board_id) VALUES ($1, $2) RETURNING id, title, board_id',
+      [title, boardId]
     );
     
     res.status(201).json({
@@ -54,7 +44,7 @@ router.post('/create', authenticate, async (req, res) => {
   }
 });
 
-// Get lists for a board
+// Get lists for a board (sorted by title)
 router.get('/board/:boardId', authenticate, async (req, res) => {
   try {
     const { boardId } = req.params;
@@ -73,9 +63,9 @@ router.get('/board/:boardId', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Board not found or access denied' });
     }
     
-    // Get lists
+    // Get lists sorted by title (alphabetical order)
     const listsResult = await pool.query(
-      'SELECT * FROM LIST WHERE board_id = $1 ORDER BY position ASC',
+      'SELECT * FROM LIST WHERE board_id = $1 ORDER BY title ASC',
       [boardId]
     );
     

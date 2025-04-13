@@ -187,6 +187,39 @@ router.get('/:teamId/members', authenticate, async (req, res) => {
   }
 });
 
+// 📌 Get a specific team's details
+router.get('/:teamId', authenticate, async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const userId = req.user.id;
+
+    // Check if the user is a member of the team
+    const accessCheck = await pool.query(
+      'SELECT * FROM TEAM_MEMBERS WHERE team_id = $1 AND user_id = $2',
+      [teamId, userId]
+    );
+
+    if (accessCheck.rows.length === 0) {
+      return res.status(403).json({ message: 'Access denied: Not a team member' });
+    }
+
+    const teamResult = await pool.query(
+      'SELECT id, name, created_by, created_at FROM TEAM WHERE id = $1',
+      [teamId]
+    );
+
+    if (teamResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    res.json({ team: teamResult.rows[0] });
+  } catch (err) {
+    console.error("Get Team By ID Error:", err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 // 🚫 Remove Team Member Route
 router.delete('/:teamId/members/:userId', authenticate, async (req, res) => {
   try {

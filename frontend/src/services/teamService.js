@@ -103,3 +103,22 @@ export const removeTeamMember = async (teamId, userId) => {
     );
   }
 };
+// Get single team by ID
+export const getTeamById = async (teamId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get(
+      `${API_URL}/teams/${teamId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data.team;
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || 'Failed to fetch team details'
+    );
+  }
+};

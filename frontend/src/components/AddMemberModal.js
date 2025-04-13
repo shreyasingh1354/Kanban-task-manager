@@ -29,7 +29,7 @@ const AddMemberModal = ({ open, onClose, teamId, onMemberAdded }) => {
     setError(null);
     setSuccess(false);
     
-    if (!userId) {
+    if (!userId.trim()) {
       setError('User ID is required');
       return;
     }
@@ -50,7 +50,8 @@ const AddMemberModal = ({ open, onClose, teamId, onMemberAdded }) => {
         onClose();
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add team member');
+      console.error("Error adding member:", err);
+      setError(err.message || 'Failed to add team member');
     } finally {
       setLoading(false);
     }
@@ -65,7 +66,15 @@ const AddMemberModal = ({ open, onClose, teamId, onMemberAdded }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="sm" 
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: 1 }
+      }}
+    >
       <DialogTitle>
         <Typography variant="h6">Add Team Member</Typography>
       </DialogTitle>
@@ -87,6 +96,7 @@ const AddMemberModal = ({ open, onClose, teamId, onMemberAdded }) => {
               required
               margin="dense"
               helperText="Enter the ID of the user you want to add"
+              autoFocus
             />
           </Box>
           
@@ -114,6 +124,10 @@ const AddMemberModal = ({ open, onClose, teamId, onMemberAdded }) => {
               />
             </RadioGroup>
           </FormControl>
+          
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Note: You need to know the user's ID to add them to the team. The user ID can be found in their profile.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} disabled={loading}>
@@ -123,7 +137,7 @@ const AddMemberModal = ({ open, onClose, teamId, onMemberAdded }) => {
             type="submit" 
             variant="contained" 
             color="primary"
-            disabled={loading}
+            disabled={loading || !userId.trim()}
           >
             {loading ? <CircularProgress size={24} /> : 'Add Member'}
           </Button>

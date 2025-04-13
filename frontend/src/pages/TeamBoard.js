@@ -41,20 +41,50 @@ const TeamBoard = () => {
   const [showAddMember, setShowAddMember] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  // Load current user ID once on component mount
+  useEffect(() => {
+    try {
+      const userDataString = localStorage.getItem('user');
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        setCurrentUserId(userData.id);
+        console.log("Retrieved user ID:", userData.id);
+      } else {
+        console.log("No user data found in localStorage");
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+  }, []);
 
   // Fetch team data and boards
   useEffect(() => {
     const fetchTeamData = async () => {
+      if (!teamId) return;
+      
       setLoading(true);
       try {
         // Fetch team members
         const members = await getTeamMembers(teamId);
         setTeamMembers(members);
+        console.log("Team members:", members);
         
-        // Check if current user is admin
-        const currentUserData = JSON.parse(localStorage.getItem('userData'));
-        const currentUser = members.find(member => member.id === currentUserData?.id);
-        setIsAdmin(currentUser?.role === 'admin');
+        // Check if current user is admin using the stored currentUserId
+        if (currentUserId) {
+          console.log("Checking if user", currentUserId, "is admin");
+          const currentUser = members.find(member => member.id === currentUserId);
+          console.log("Found user in members:", currentUser);
+          
+          if (currentUser && currentUser.role === 'admin') {
+            console.log("User is admin!");
+            setIsAdmin(true);
+          } else {
+            console.log("User is not admin or not found in members");
+            setIsAdmin(false);
+          }
+        }
         
         // Fetch boards for this team
         const boardsData = await getTeamBoards(teamId);
@@ -68,16 +98,17 @@ const TeamBoard = () => {
         setError(null);
       } catch (err) {
         console.error("Error fetching team data:", err);
-        setError(err.response?.data?.message || "Failed to load team data");
+        setError(err.message || "Failed to load team data");
       } finally {
         setLoading(false);
       }
     };
 
-    if (teamId) {
+    // Only fetch team data if currentUserId is available
+    if (currentUserId) {
       fetchTeamData();
     }
-  }, [teamId]);
+  }, [teamId, currentUserId]);
 
   const handleBackToDashboard = () => {
     navigate('/dashboard');
@@ -87,6 +118,8 @@ const TeamBoard = () => {
     try {
       const members = await getTeamMembers(teamId);
       setTeamMembers(members);
+      // Close add member modal
+      setShowAddMember(false);
     } catch (err) {
       console.error("Error refreshing team members:", err);
     }
@@ -96,11 +129,12 @@ const TeamBoard = () => {
     try {
       await removeTeamMember(teamId, userId);
       // Refresh member list
-      handleMemberAdded();
+      const members = await getTeamMembers(teamId);
+      setTeamMembers(members);
       setRemoveConfirm(null);
     } catch (err) {
       console.error("Error removing team member:", err);
-      setError(err.response?.data?.message || "Failed to remove team member");
+      setError(err.message || "Failed to remove team member");
     }
   };
 
@@ -171,6 +205,7 @@ const TeamBoard = () => {
               Team Members ({teamMembers.length})
             </Button>
             
+            {/* Add Member Button - Only visible to admins */}
             {isAdmin && (
               <Button 
                 variant="contained" 
@@ -235,7 +270,7 @@ const TeamBoard = () => {
                       size="small"
                     />
                     
-                    {isAdmin && member.id !== JSON.parse(localStorage.getItem('userData'))?.id && (
+                    {isAdmin && member.id !== currentUserId && (
                       <Button 
                         size="small" 
                         color="error" 
@@ -251,9 +286,11 @@ const TeamBoard = () => {
             </Box>
           </DialogContent>
           <DialogActions>
+            {/* Add the Add Member button in the dialog as well */}
             {isAdmin && (
               <Button 
                 color="primary" 
+                startIcon={<AddIcon />}
                 onClick={() => {
                   setShowMembers(false);
                   setShowAddMember(true);

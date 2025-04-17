@@ -25,21 +25,25 @@ const CreateTeamModal = ({ open, onClose, onTeamCreated }) => {
       setError('Team name is required');
       return;
     }
-
+  
     setLoading(true);
     setError('');
-
+  
     try {
       const response = await createTeam(teamName);
+      console.log("Create team response:", response);
       setLoading(false);
       
       if (response && response.team) {
         onTeamCreated(response.team);
         onClose();
-        
-        // Navigate to the new board if a boardId was returned
-        if (response.boardId) {
-          navigate(`/board/${response.boardId}`);
+  
+        const teamId = response.team.id || response.team._id;
+  
+        if (response.boardId && teamId) {
+          navigate(`/team/${teamId}/board`);
+        } else {
+          console.warn("Missing teamId or boardId");
         }
       }
     } catch (err) {
@@ -47,6 +51,7 @@ const CreateTeamModal = ({ open, onClose, onTeamCreated }) => {
       setError(err.message || 'Failed to create team. Please try again.');
     }
   };
+  
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

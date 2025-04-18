@@ -12,33 +12,41 @@ import {
   Select,
   Box,
   CircularProgress,
-  Alert
+  Alert,
+  Typography
 } from '@mui/material';
 import { createTask } from '../services/taskService';
+import { getToDoList } from '../components/defaultLists';
 
 function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [], users = [] }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [listId, setListId] = useState(defaultListId || '');
+  const [listId, setListId] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [priority, setPriority] = useState('medium');
   const [status, setStatus] = useState('new');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Reset form when modal opens/closes
+  // Reset form when modal opens/closes and set listId to "To Do" list
   useEffect(() => {
     if (open) {
-      setListId(defaultListId || '');
+      // Try to find the "To Do" list
+      const toDoList = getToDoList(lists);
+      // If "To Do" list exists, use it. Otherwise, use defaultListId or first list
+      const initialListId = toDoList ? toDoList.id : 
+                           (defaultListId || (lists.length > 0 ? lists[0].id : ''));
+      
+      setListId(initialListId);
     } else {
       resetForm();
     }
-  }, [open, defaultListId]);
+  }, [open, defaultListId, lists]);
 
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setListId(defaultListId || '');
+    setListId('');
     setAssignedTo('');
     setPriority('medium');
     setStatus('new');
@@ -96,6 +104,10 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
     }
   };
 
+  // Find the "To Do" list for the disabled select field
+  const toDoList = getToDoList(lists);
+  const listTitle = toDoList ? toDoList.title : "To Do";
+  
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Add New Task</DialogTitle>
@@ -130,6 +142,7 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
             label="List"
             onChange={(e) => setListId(e.target.value)}
             required
+            disabled={true} // Always disable the list selection to enforce "To Do" list
           >
             {lists.map((list) => (
               <MenuItem key={list.id} value={list.id}>
@@ -137,6 +150,9 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
               </MenuItem>
             ))}
           </Select>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            New tasks are always added to the "{listTitle}" list
+          </Typography>
         </FormControl>
 
         {users.length > 0 && (

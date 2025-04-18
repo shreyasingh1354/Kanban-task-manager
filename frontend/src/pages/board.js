@@ -1,3 +1,4 @@
+// frontend/src/pages/board.js
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
@@ -26,13 +27,13 @@ import Sidebar from '../components/sidebar';
 import TaskCard from '../components/taskCard';
 import Ticket from '../components/ticket';
 import AddTicketModal from '../components/addticketmodal';
-// import AddListModal from '../components/AddListModal';
 import { getBoardLists, getListTasks, updateTask } from '../services/boardService';
+import { DEFAULT_LISTS, getToDoList } from '../components/defaultLists';
 
 /* ------------------------------------
    BOARD NAVIGATION COMPONENT
    ------------------------------------ */
-const BoardNavigation = ({ view, onViewChange, onAddTicketClick, onAddListClick }) => (
+const BoardNavigation = ({ view, onViewChange, onAddTicketClick }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderBottom: 1, borderColor: 'divider' }}>
     <Typography variant="h6" sx={{ fontWeight: 600 }}> </Typography>
     <Typography variant="h6" sx={{ fontWeight: 600 }}> </Typography>
@@ -76,15 +77,6 @@ const BoardNavigation = ({ view, onViewChange, onAddTicketClick, onAddListClick 
       <Button startIcon={<CustomizeIcon />} variant="outlined" sx={{ borderRadius: '8px' }}>
         Customize
       </Button>
-
-      {/* <Button
-        variant="outlined"
-        startIcon={<AddIcon />}
-        sx={{ borderRadius: '8px' }}
-        onClick={onAddListClick}
-      >
-        Add List
-      </Button> */}
 
       <Button
         variant="contained"
@@ -137,8 +129,6 @@ const Board = ({ boardId, teamId }) => {
   const [tasks, setTasks] = useState({});
   const [selectedTask, setSelectedTask] = useState(null);
   const [addTicketOpen, setAddTicketOpen] = useState(false);
-  const [addListOpen, setAddListOpen] = useState(false);
-  const [currentListId, setCurrentListId] = useState(null);
   const location = useLocation();
   
   // Dragging state
@@ -153,11 +143,21 @@ const Board = ({ boardId, teamId }) => {
       try {
         // Get lists for this board
         const listsData = await getBoardLists(boardId);
-        setLists(listsData);
+        
+        // Filter to only show the 3 default lists
+        // If we have less than 3 lists, we'll show what we have
+        const boardLists = listsData.length >= 3 
+          ? listsData.slice(0, 3) 
+          : listsData;
+        
+        // If we have less than 3 lists, we could create the missing default lists here
+        // This would require a backend API call to create the lists
+        
+        setLists(boardLists);
         
         // Fetch tasks for each list
         const tasksObj = {};
-        for (const list of listsData) {
+        for (const list of boardLists) {
           const listTasks = await getListTasks(list.id);
           tasksObj[list.id] = listTasks;
         }
@@ -223,41 +223,62 @@ const Board = ({ boardId, teamId }) => {
   const handleDrop = async (e, targetListId) => {
     e.preventDefault();
     if (!dragging) return;
-
+  
     const { task, sourceListId } = dragging;
     // If same list, do nothing
     if (sourceListId === targetListId) {
       setDragging(null);
       return;
     }
-
+  
     try {
+      // Create the payload for the backend API
+      // Make sure to structure this according to what your backend expects
+      const taskUpdatePayload = {
+        listId: targetListId,  // The new list ID
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        status: task.status,
+        // Include other necessary fields based on your API requirements
+      };
+  
+      console.log('Updating task:', task.id, 'to list:', targetListId);
+      console.log('Update payload:', taskUpdatePayload);
+  
       // Update the task on the backend
-      const updatedTask = await updateTask(task.id, {
-        ...task,
-        list_id: targetListId
-      });
-
+      const updatedTask = await updateTask(task.id, taskUpdatePayload);
+      console.log('Task updated in database:', updatedTask);
+  
+      // Create a complete task object for the frontend
+      const completeTask = {
+        ...task,        // Keep all original properties
+        ...updatedTask, // Overwrite with any updated properties from the response
+        list_id: targetListId, // Ensure the list_id is updated
+        // Make sure assignees is an array
+        assignees: updatedTask.assignees || task.assignees || []
+      };
+  
       // Update local state
       setTasks(prevTasks => {
         return {
           ...prevTasks,
           // Remove from source list
           [sourceListId]: prevTasks[sourceListId].filter(t => t.id !== task.id),
-          // Add to target list
-          [targetListId]: [...prevTasks[targetListId], updatedTask]
+          // Add to target list with complete data
+          [targetListId]: [...prevTasks[targetListId], completeTask]
         };
       });
     } catch (err) {
       console.error("Error moving task:", err);
       setError("Failed to move task. Please try again.");
     }
-
+  
     setDragging(null);
   };
 
   /* ------------------------------------
-     ADD TASK
+     ADD TASK - Always adds to "To Do" list
      ------------------------------------ */
   const handleAddTask = (task) => {
     if (task && task.list_id) {
@@ -271,25 +292,19 @@ const Board = ({ boardId, teamId }) => {
   };
 
   /* ------------------------------------
-     ADD LIST
-     ------------------------------------ */
-  const handleAddList = (list) => {
-    // Add list to state
-    setLists(prevLists => [...prevLists, list]);
-    // Initialize empty tasks array for this list
-    setTasks(prevTasks => ({
-      ...prevTasks,
-      [list.id]: []
-    }));
-    setAddListOpen(false);
-  };
-
-  /* ------------------------------------
-     OPEN ADD TASK MODAL FOR SPECIFIC LIST
+     OPEN ADD TASK MODAL - Always for "To Do" list
      ------------------------------------ */
   const handleAddTaskToList = (listId) => {
-    setCurrentListId(listId);
-    setAddTicketOpen(true);
+    // Instead of setting to the specified list, we always set to the "To Do" list
+    const toDoList = getToDoList(lists);
+    
+    if (toDoList) {
+      setAddTicketOpen(true);
+      // We'll still pass the original listId to track which column's "+" button was clicked,
+      // but the task will be created in the "To Do" list
+    } else {
+      setError("To Do list not found. Cannot add task.");
+    }
   };
 
   /* Display loading spinner when fetching data */
@@ -300,6 +315,10 @@ const Board = ({ boardId, teamId }) => {
       </Box>
     );
   }
+
+  // Get the "To Do" list for adding new tasks
+  const toDoList = getToDoList(lists);
+  const defaultListId = toDoList ? toDoList.id : (lists.length > 0 ? lists[0].id : null);
 
   return (
     <Box sx={{ display: 'left', height: '100vh', bgcolor: '#f8f9fa' }}>
@@ -327,10 +346,12 @@ const Board = ({ boardId, teamId }) => {
           view={view}
           onViewChange={handleViewChange}
           onAddTicketClick={() => {
-            setCurrentListId(null);
-            setAddTicketOpen(true);
+            if (defaultListId) {
+              setAddTicketOpen(true);
+            } else {
+              setError("No lists available to add tasks");
+            }
           }}
-          onAddListClick={() => setAddListOpen(true)}
         />
         
         <Box sx={{ display: 'flex', gap: 3, p: 3, overflowX: 'auto' }}>
@@ -372,25 +393,17 @@ const Board = ({ boardId, teamId }) => {
         open={Boolean(selectedTask)} 
         task={selectedTask} 
         onClose={handleCloseTask} 
+        lists={lists}
       />
 
-      {/* The modal for adding a new task */}
+      {/* The modal for adding a new task - always to "To Do" list */}
       <AddTicketModal
         open={addTicketOpen}
         onClose={() => setAddTicketOpen(false)}
         onAddTicket={handleAddTask}
-        defaultListId={currentListId}
-        boardId={boardId}
+        defaultListId={defaultListId}
         lists={lists}
       />
-
-      {/* The modal for adding a new list */}
-      {/* <AddListModal
-        open={addListOpen}
-        onClose={() => setAddListOpen(false)}
-        onAddList={handleAddList}
-        boardId={boardId}
-      /> */}
     </Box>
   );
 };

@@ -15,7 +15,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Routes
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/lists', listRoutes);

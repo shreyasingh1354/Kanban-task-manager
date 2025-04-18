@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../services/api'; // API function to register user
+import { register } from '../services/authService'; // API function to register user
 import {
   Container, TextField, Button, Box, Typography, Paper, IconButton,
   InputAdornment, Divider, Alert

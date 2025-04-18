@@ -20,6 +20,18 @@ import {
 } from '@mui/icons-material';
 
 const Ticket = ({ ticket, onClick }) => {
+  // Ensure ticket has necessary properties with defaults
+  const safeTicket = {
+    type: 'Task',
+    priority: 'Medium',
+    title: '',
+    description: '',
+    assignees: [],
+    subtasks: 0,
+    comments: 0,
+    ...ticket  // This will overwrite defaults with actual values if they exist
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority.toLowerCase()) {
       case 'high':
@@ -71,24 +83,24 @@ const Ticket = ({ ticket, onClick }) => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Chip
-              label={ticket.type}
+              label={safeTicket.type}
               size="small"
               sx={{
                 height: 24,
-                bgcolor: getTypeColor(ticket.type).background,
-                color: getTypeColor(ticket.type).color,
+                bgcolor: getTypeColor(safeTicket.type).background,
+                color: getTypeColor(safeTicket.type).color,
                 '& .MuiChip-label': {
                   px: 1,
                 }
               }}
             />
             <Chip
-              label={ticket.priority}
+              label={safeTicket.priority}
               size="small"
               sx={{
                 height: 24,
-                bgcolor: getPriorityColor(ticket.priority),
-                color: getPriorityTextColor(ticket.priority),
+                bgcolor: getPriorityColor(safeTicket.priority),
+                color: getPriorityTextColor(safeTicket.priority),
                 '& .MuiChip-label': {
                   px: 1,
                 }
@@ -111,7 +123,7 @@ const Ticket = ({ ticket, onClick }) => {
             lineHeight: 1.2,
           }}
         >
-          {ticket.title}
+          {safeTicket.title}
         </Typography>
 
         <Typography
@@ -127,7 +139,7 @@ const Ticket = ({ ticket, onClick }) => {
             overflow: 'hidden',
           }}
         >
-          {ticket.description}
+          {safeTicket.description}
         </Typography>
 
         <Box sx={{ 
@@ -146,7 +158,7 @@ const Ticket = ({ ticket, onClick }) => {
               },
             }}
           >
-            {ticket.assignees.map((assignee, idx) => (
+            {safeTicket.assignees.map((assignee, idx) => (
               <Tooltip key={idx} title={assignee}>
                 <Avatar 
                   sx={{ 
@@ -163,13 +175,13 @@ const Ticket = ({ ticket, onClick }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <LinkIcon sx={{ fontSize: 20, color: '#666' }} />
               <Typography variant="body2" color="text.secondary">
-                {ticket.subtasks}
+                {safeTicket.subtasks}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <CommentIcon sx={{ fontSize: 20, color: '#666' }} />
               <Typography variant="body2" color="text.secondary">
-                {ticket.comments}
+                {safeTicket.comments}
               </Typography>
             </Box>
           </Box>

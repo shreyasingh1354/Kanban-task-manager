@@ -25,7 +25,7 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { getUserTeams } from '../services/teamService';
-import CreateTeamModal from './CreateTeamModal';
+import CreateTeamModal from './createTeamModal';
 
 const drawerWidth = 260;
 

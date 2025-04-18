@@ -24,7 +24,7 @@ import {
 } from '@mui/icons-material';
 
 import Sidebar from '../components/sidebar';
-import TaskCard from '../components/TaskCard';
+import TaskCard from '../components/taskCard';
 import Ticket from '../components/ticket';
 import AddTicketModal from '../components/addticketmodal';
 import { getBoardLists, getListTasks, updateTask } from '../services/boardService';
@@ -276,7 +276,7 @@ const Board = ({ boardId, teamId }) => {
   
     setDragging(null);
   };
-  
+
   /* ------------------------------------
      ADD TASK - Always adds to "To Do" list
      ------------------------------------ */

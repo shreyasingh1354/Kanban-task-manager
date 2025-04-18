@@ -27,7 +27,7 @@ import {
 import { getTeamMembers, removeTeamMember, getTeamById } from '../services/teamService';
 import { getTeamBoards } from '../services/boardService';
 import Board from './board';
-import AddMemberModal from '../components/AddMemberModal';
+import AddMemberModal from '../components/addMemberModal';
 
 const TeamBoard = () => {
   const { teamId } = useParams();

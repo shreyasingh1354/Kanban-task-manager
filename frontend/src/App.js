@@ -3,7 +3,7 @@ import Login from './pages/login';
 import Register from './pages/register';
 import Dashboard from './pages/dashboard';
 import Board from './pages/board';
-import TeamBoard from './pages/TeamBoard';
+import TeamBoard from './pages/teamBoard';
 
 
 

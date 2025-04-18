@@ -232,18 +232,29 @@ const Board = ({ boardId, teamId }) => {
     }
   
     try {
-      // Ensure we're passing all the necessary properties for the task
-      const taskToUpdate = {
-        ...task,
-        list_id: targetListId
+      // Create the payload for the backend API
+      // Make sure to structure this according to what your backend expects
+      const taskUpdatePayload = {
+        listId: targetListId,  // The new list ID
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        status: task.status,
+        // Include other necessary fields based on your API requirements
       };
   
-      // Update the task on the backend
-      const updatedTask = await updateTask(task.id, taskToUpdate);
+      console.log('Updating task:', task.id, 'to list:', targetListId);
+      console.log('Update payload:', taskUpdatePayload);
   
-      // Ensure the updatedTask has all necessary properties for display
+      // Update the task on the backend
+      const updatedTask = await updateTask(task.id, taskUpdatePayload);
+      console.log('Task updated in database:', updatedTask);
+  
+      // Create a complete task object for the frontend
       const completeTask = {
-        ...updatedTask,
+        ...task,        // Keep all original properties
+        ...updatedTask, // Overwrite with any updated properties from the response
+        list_id: targetListId, // Ensure the list_id is updated
         // Make sure assignees is an array
         assignees: updatedTask.assignees || task.assignees || []
       };

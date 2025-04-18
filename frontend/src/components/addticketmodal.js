@@ -53,6 +53,15 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
     setError(null);
   };
 
+  // Handle numeric input only for the assignedTo field
+  const handleAssignedToChange = (e) => {
+    const value = e.target.value;
+    // Allow empty string or numbers only
+    if (value === '' || /^[0-9]+$/.test(value)) {
+      setAssignedTo(value);
+    }
+  };
+
   const handleAdd = async () => {
     if (!title) {
       setError('Title is required');
@@ -66,23 +75,37 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
 
     setLoading(true);
     try {
+      // Convert assignedTo to a proper integer or null if empty
+      const userIdInt = assignedTo ? Number(assignedTo) : null;
+      
       const taskData = {
         title,
         description,
-        listId,
-        assignedTo: assignedTo || null,
+        listId: Number(listId), // Ensure listId is also a number
+        assignedTo: userIdInt, // Pass the integer value
         priority,
         status
       };
 
+      console.log('Sending task data:', taskData); // Debug logging
+      
       const newTask = await createTask(taskData);
+      console.log('Received task response:', newTask); // Debug logging
+      
+      // Find the assigned username if a user is assigned
+      let assignedUsername = '';
+      if (userIdInt !== null) {
+        const assignedUser = users.find(user => user.id === userIdInt);
+        assignedUsername = assignedUser ? assignedUser.username : `User ${userIdInt}`;
+      }
       
       // Convert backend task format to frontend ticket format
       const newTicket = {
         id: newTask.id,
         title: newTask.title,
         description: newTask.description || '',
-        assignees: newTask.assigned_to ? [newTask.assigned_username || `User ${newTask.assigned_to}`] : [],
+        assigned_to: userIdInt, // This is the integer userId
+        assignees: userIdInt !== null ? [assignedUsername] : [],
         priority: newTask.priority,
         status: newTask.status,
         list_id: newTask.list_id,
@@ -98,6 +121,7 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
       onAddTicket(newTicket);
       onClose();
     } catch (err) {
+      console.error('Error creating task:', err); // Debug logging
       setError(err.message || 'Failed to create task');
     } finally {
       setLoading(false);
@@ -119,7 +143,7 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
         )}
 
         <TextField
-          label="Title"
+          label="Title *"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
@@ -145,7 +169,7 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
             disabled={true} // Always disable the list selection to enforce "To Do" list
           >
             {lists.map((list) => (
-              <MenuItem key={list.id} value={list.id}>
+              <MenuItem key={list.id} value={list.id.toString()}>
                 {list.title}
               </MenuItem>
             ))}
@@ -155,25 +179,19 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
           </Typography>
         </FormControl>
 
-        {users.length > 0 && (
-          <FormControl fullWidth>
-            <InputLabel>Assign To</InputLabel>
-            <Select
-              value={assignedTo}
-              label="Assign To"
-              onChange={(e) => setAssignedTo(e.target.value)}
-            >
-              <MenuItem value="">
-                <em>Unassigned</em>
-              </MenuItem>
-              {users.map((user) => (
-                <MenuItem key={user.id} value={user.id}>
-                  {user.username}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
+        {/* Changed from Select to TextField for direct userId input */}
+        <TextField
+          label="Assign To (User ID)"
+          value={assignedTo}
+          onChange={handleAssignedToChange}
+          placeholder="Enter User ID (leave empty for unassigned)"
+          fullWidth
+          inputProps={{
+            pattern: '[0-9]*', // Accepts only numbers
+            inputMode: 'numeric' // Shows numeric keyboard on mobile
+          }}
+          helperText="Enter a numeric User ID or leave empty for unassigned"
+        />
 
         <FormControl fullWidth>
           <InputLabel>Priority</InputLabel>
@@ -204,7 +222,7 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} variant="outlined" disabled={loading}>
-          Cancel
+          CANCEL
         </Button>
         <Button 
           onClick={handleAdd} 
@@ -212,7 +230,7 @@ function AddTicketModal({ open, onClose, onAddTicket, defaultListId, lists = [],
           disabled={loading}
           startIcon={loading && <CircularProgress size={20} />}
         >
-          {loading ? 'Creating...' : 'Add Task'}
+          {loading ? 'Creating...' : 'ADD TASK'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -65,7 +65,7 @@ const TaskCard = ({ open, onClose, task, lists = [], users = [] }) => {
         listId: editedTask.list_id,
         priority: editedTask.priority.toLowerCase(),
         status: editedTask.status.toLowerCase(),
-        assignedTo: editedTask.assignees?.length > 0 ? editedTask.assignTo : null
+        assignedTo: editedTask.assigned_to // Fixed: Use assigned_to instead of assignTo
       };
 
       // Call API to update task
@@ -75,6 +75,12 @@ const TaskCard = ({ open, onClose, task, lists = [], users = [] }) => {
       const updatedTicket = {
         ...task,
         ...updatedTask,
+        title: updatedTask.title,
+        description: updatedTask.description || '',
+        list_id: updatedTask.list_id,
+        priority: updatedTask.priority,
+        status: updatedTask.status,
+        assigned_to: updatedTask.assigned_to, // Added this field
         assignees: updatedTask.assigned_to ? 
           [updatedTask.assigned_username || `User ${updatedTask.assigned_to}`] : []
       };
@@ -345,8 +351,8 @@ const TaskCard = ({ open, onClose, task, lists = [], users = [] }) => {
               <FormControl fullWidth margin="normal">
                 <InputLabel>Assign To</InputLabel>
                 <Select
-                  name="assignTo"
-                  value={editedTask.assignTo || ''}
+                  name="assigned_to" // Fixed: changed from assignTo to assigned_to
+                  value={editedTask.assigned_to || ''}
                   label="Assign To"
                   onChange={handleChange}
                 >

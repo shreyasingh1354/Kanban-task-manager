@@ -1,165 +1,164 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Grid,
-  Paper,
   Typography,
-  Avatar,
-  Chip,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
+  CircularProgress,
   IconButton,
+  InputBase,
+  Button,
+  ToggleButtonGroup,
+  ToggleButton,
+  Paper
 } from '@mui/material';
 import {
-  BarChart as BarChartIcon,
-  Group as GroupIcon,
-  AccessTime as ClockIcon,
-  CheckCircle as CheckCircleIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  NotificationsActive as ActivityIcon,
-  Warning as AlertIcon,
+  Add as AddIcon,
+  Search as SearchIcon,
+  ViewModule as BoardIcon,
+  ViewList as ListIcon,
+  FilterList as FilterIcon,
+  Settings as CustomizeIcon
 } from '@mui/icons-material';
-import Header from '../components/header';
+
 import Sidebar from '../components/sidebar';
+import Header from '../components/header';
+import AddTicketModal from '../components/addticketmodal';
+import { getUserDashboardTasks } from '../services/dashService';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const location = useLocation();
+  const [tasks, setTasks] = useState({ todo: [], inProgress: [], completed: [] });
+  const [loading, setLoading] = useState(true);
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [selectedList, setSelectedList] = useState('todo');
+  const [view, setView] = useState('board');
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
+  const handleSidebarToggle = () => setSidebarOpen(!sidebarOpen);
+
+  const handleViewChange = (event, newView) => {
+    if (newView !== null) setView(newView);
   };
 
-  const stats = [
-    { title: 'Total Tasks', value: '24', icon: BarChartIcon, change: '+12%', changeType: 'increase' },
-    { title: 'Team Members', value: '12', icon: GroupIcon, change: '+2', changeType: 'increase' },
-    { title: 'In Progress', value: '8', icon: ClockIcon, change: '-3', changeType: 'decrease' },
-    { title: 'Completed', value: '156', icon: CheckCircleIcon, change: '+8%', changeType: 'increase' },
+  const handleAddTask = (newTask) => {
+    setTasks(prev => ({
+      ...prev,
+      [selectedList]: [...prev[selectedList], newTask]
+    }));
+    setAddTaskOpen(false);
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const taskData = await getUserDashboardTasks();
+      setTasks(taskData);
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const COLORS = ['#e53935', '#fdd835', '#43a047'];
+
+  const pieData = [
+    { name: 'To Do', value: tasks.todo.length },
+    { name: 'In Progress', value: tasks.inProgress.length },
+    { name: 'Completed', value: tasks.completed.length },
   ];
 
-  const recentActivity = [
-    { user: 'John Doe', action: 'completed', task: 'Homepage Redesign', time: '2h ago', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=40&h=40&fit=crop' },
-    { user: 'Alice Mitchell', action: 'commented on', task: 'User Authentication Flow', time: '4h ago', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop' },
-    { user: 'Robert Wilson', action: 'started', task: 'API Integration', time: '6h ago', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=40&h=40&fit=crop' },
-  ];
-
-  const upcomingDeadlines = [
-    { task: 'Mobile App Design', deadline: 'Tomorrow', priority: 'High', team: 'Design' },
-    { task: 'Database Migration', deadline: 'In 2 days', priority: 'Medium', team: 'Development' },
-    { task: 'Q4 Marketing Plan', deadline: 'In 3 days', priority: 'High', team: 'Marketing' },
-  ];
+  const renderColumn = (title, listName, taskList) => (
+    <Grid item xs={12} md={4}>
+      <Paper sx={{ p: 2 }}>
+        <Box sx={{ display: 'left', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle1" fontWeight={600}>{title}</Typography>
+          <Box>
+            <IconButton size="small" onClick={() => { setSelectedList(listName); setAddTaskOpen(true); }}>
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+        {taskList.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No tasks</Typography>
+        ) : (
+          taskList.map((task, i) => (
+            <Paper key={i} sx={{ p: 1.5, mb: 1 }} elevation={3}>
+              <Typography variant="subtitle2">{task.title}</Typography>
+              <Typography variant="body2" color="text.secondary">{task.description}</Typography>
+            </Paper>
+          ))
+        )}
+      </Paper>
+    </Grid>
+  );
 
   return (
-    <Box sx={{ display: 'left', height: '100vh', overflow: 'hidden' }}>
-      <Sidebar open={sidebarOpen} onToggle={handleSidebarToggle}/>
+    <Box sx={{ display: 'left', minHeight: '100vh' }}>
+      <Sidebar open={sidebarOpen} onToggle={handleSidebarToggle} />
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          ml: sidebarOpen ? '260px' : 0,
+          width: sidebarOpen ? 'calc(100% - 260px)' : '100%',
+          transition: 'margin-left 0.3s, width 0.3s',
+          overflowY: 'auto',
+          p: 2
+        }}
+      >
+        <Header title="Dashboard" />
 
-<Box 
-  component="main" 
-  sx={{ 
-    flexGrow: 1, 
-    p: 2, 
-    ml: sidebarOpen ? '260px' : 0,
-    width: sidebarOpen ? 'calc(100% - 260px)' : '100%',
-    transition: 'margin-left 0.3s, width 0.3s',
-    overflowY: 'auto' 
-  }}
->
-  <Header title="Dashboard" />
-
-  {/* Stats Grid */}
-  <Grid container spacing={3} sx={{ mb: 3 }}>
-    {stats.map((stat, index) => (
-      <Grid item xs={12} md={6} lg={3} key={index}>
-        <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">{stat.title}</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', color: stat.changeType === 'increase' ? 'success.main' : 'error.main' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>{stat.change}</Typography>
-              {stat.changeType === 'increase' ? <TrendingUpIcon sx={{ ml: 0.5 }} /> : <TrendingDownIcon sx={{ ml: 0.5 }} />}
-            </Box>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+            <CircularProgress />
           </Box>
-          <Typography variant="h4" sx={{ mt: 1 }}>{stat.value}</Typography>
-        </Paper>
-      </Grid>
-    ))}
-  </Grid>
-
-  <Grid container spacing={3}>
-    {/* Recent Activity */}
-    <Grid item xs={12} lg={6}>
-      <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h6">Recent Activity</Typography>
-          <IconButton size="small"><ActivityIcon /></IconButton>
-        </Box>
-        <List>
-          {recentActivity.map((activity, index) => (
-            <ListItem key={index} sx={{ px: 0 }}>
-              <ListItemAvatar>
-                <Avatar src={activity.avatar} />
-              </ListItemAvatar>
-              <ListItemText
-                primary={
-                  <Typography variant="body2">
-                    <Typography component="span" sx={{ fontWeight: 600 }}>{activity.user}</Typography>{' '}
-                    {activity.action}{' '}
-                    <Typography component="span" sx={{ fontWeight: 600 }}>{activity.task}</Typography>
-                  </Typography>
-                }
-                secondary={activity.time}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
-    </Grid>
-
-    {/* Upcoming Deadlines */}
-    <Grid item xs={12} lg={6}>
-      <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h6">Upcoming Deadlines</Typography>
-          <IconButton size="small"><AlertIcon /></IconButton>
-        </Box>
-        <List>
-          {upcomingDeadlines.map((deadline, index) => (
-            <ListItem
-              key={index}
-              sx={{
-                bgcolor: 'grey.50',
-                borderRadius: 1,
-                mb: 1,
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}
-            >
-              <Box>
-                <Typography variant="subtitle2">{deadline.task}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                  <Typography variant="body2" color="text.secondary">{deadline.team}</Typography>
-                  <Typography variant="body2" color="text.secondary">•</Typography>
-                  <Typography variant="body2" color="text.secondary">{deadline.deadline}</Typography>
-                </Box>
-              </Box>
-              <Chip
-                label={deadline.priority}
-                size="small"
-                color={deadline.priority === 'High' ? 'error' : 'warning'}
-                sx={{ ml: 2 }}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
-    </Grid>
-  </Grid>
-</Box>
-</Box>
-);
+        ) : (
+          <>
+            <Grid container spacing={3}>
+              {renderColumn('To Do', 'todo', tasks.todo)}
+              {renderColumn('In Progress', 'inProgress', tasks.inProgress)}
+              {renderColumn('Completed', 'completed', tasks.completed)}
+            </Grid>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 4 }}>
+              <Paper elevation={6} sx={{ width: 400, p: 3, bgcolor: 'background.paper' }}>
+                <Typography variant="h6" align="center" gutterBottom>
+                  Task Distribution
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Box>
+          </>
+        )}
+      </Box>
+      <AddTicketModal
+        open={addTaskOpen}
+        onClose={() => setAddTaskOpen(false)}
+        onAdd={handleAddTask}
+      />
+    </Box>
+  );
 };
 
 export default Dashboard;

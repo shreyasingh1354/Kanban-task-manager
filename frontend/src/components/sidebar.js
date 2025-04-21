@@ -29,7 +29,7 @@ import CreateTeamModal from './createTeamModal';
 
 const drawerWidth = 260;
 
-const Sidebar = ({ onViewChange, currentView, open, onToggle, user }) => {
+const Sidebar = ({ onViewChange, currentView, open, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = currentView || '';
@@ -37,6 +37,18 @@ const Sidebar = ({ onViewChange, currentView, open, onToggle, user }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [createTeamModalOpen, setCreateTeamModalOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Failed to parse user from localStorage:', error);
+      }
+    }
+  }, []);
 
   // Fetch user teams
   const fetchTeams = async () => {
@@ -112,18 +124,18 @@ const Sidebar = ({ onViewChange, currentView, open, onToggle, user }) => {
       >
         {/* User Profile Section */}
         <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ bgcolor: 'primary.main' }}>
-              {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
-            </Avatar>
-            <Box>
-              <Typography variant="subtitle2">{user?.username || 'User'}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {user?.email || 'user@example.com'}
-              </Typography>
-            </Box>
-          </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Avatar sx={{ bgcolor: 'primary.main' }}>
+          {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+        </Avatar>
+        <Box>
+          <Typography variant="subtitle2">{user?.username || 'User'}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {user?.email || 'user@example.com'}
+          </Typography>
         </Box>
+      </Box>
+    </Box>
 
         <Divider />
 

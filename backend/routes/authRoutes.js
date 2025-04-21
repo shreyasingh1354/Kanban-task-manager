@@ -48,6 +48,7 @@ router.post('/register', async (req, res) => {
 // ✅ Login User (Supports Email or Phone)
 router.post('/login', async (req, res) => {
   const { identifier, password } = req.body;
+  console.log("You have hit backend server");
 
   if (!identifier || !password) {
     return res.status(400).json({ message: 'All fields are required' });

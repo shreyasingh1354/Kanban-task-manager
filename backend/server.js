@@ -6,7 +6,6 @@ const teamRoutes = require('./routes/createTeam');
 const boardRoutes = require('./routes/boardRoutes').router;
 const listRoutes = require('./routes/listRoutes');
 const taskRoutes = require('./routes/taskRoutes');
-const commentRoutes = require('./routes/commentandattach');
 const dashboardRoutes = require("./routes/dashboardRoutes");
 
 require('dotenv').config();
@@ -21,7 +20,6 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/lists', listRoutes);
 app.use('/api/tasks', taskRoutes);
-app.use('/api/comments', commentRoutes);
 app.use('/api/allTasks',dashboardRoutes);
 
 // Basic health check route
